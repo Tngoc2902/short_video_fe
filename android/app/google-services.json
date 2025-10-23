@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "554337408717",
+    "project_id": "myflutter1-94298",
+    "storage_bucket": "myflutter1-94298.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:554337408717:android:c9a06f26c94f7c20f5fb84",
+        "android_client_info": {
+          "package_name": "com.company.short_video"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "554337408717-s1omg7efh75t57gl34va96rtsgm999pq.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAQhn8oSx9cnCtbnJ6YmRStpRRm1RuAhNo"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "554337408717-s1omg7efh75t57gl34va96rtsgm999pq.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
