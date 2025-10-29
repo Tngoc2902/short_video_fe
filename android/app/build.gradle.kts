@@ -6,7 +6,11 @@ plugins {
 
     // == THAY ĐỔI 1: THÊM DÒNG NÀY ==
     // Add the Google services Gradle plugin
+<<<<<<< HEAD
+//    id("com.google.gms.google-services")
+=======
     id("com.google.gms.google-services")
+>>>>>>> 2bc1f690a6b8c1a86300beb76e14d6dd8402c2e5
 }
 
 android {
@@ -33,6 +37,10 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
 
+<<<<<<< HEAD
+        // == THAY ĐỔI 2: THÊM DÒNG NÀY ==
+=======
+>>>>>>> 2bc1f690a6b8c1a86300beb76e14d6dd8402c2e5
         // Thêm dòng này để hỗ trợ các API Firebase cũ hơn
         multiDexEnabled = true
     }
@@ -50,7 +58,11 @@ flutter {
     source = "../.."
 }
 
+<<<<<<< HEAD
+// == THAY ĐỔI 3: THÊM TOÀN BỘ KHỐI NÀY VÀO CUỐI TỆP ==
+=======
 // == THAY ĐỔI 2: THÊM TOÀN BỘ KHỐI NÀY VÀO CUỐI TỆP ==
+>>>>>>> 2bc1f690a6b8c1a86300beb76e14d6dd8402c2e5
 dependencies {
     // Import the Firebase BoM (Bill of Materials)
     // Nó sẽ tự động quản lý phiên bản của các thư viện Firebase khác
@@ -64,3 +76,7 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore") // Cho Cơ sở dữ liệu (lưu bài viết, user)
     implementation("com.google.firebase:firebase-storage")   // Cho Lưu trữ (lưu ảnh bài viết)
 }
+<<<<<<< HEAD
+
+=======
+>>>>>>> 2bc1f690a6b8c1a86300beb76e14d6dd8402c2e5
