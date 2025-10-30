@@ -34,7 +34,7 @@ class _HomeScreenState extends State<HomeScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         title: const Text(
-          'Thư viện Media',
+          'Short Video',
           style: TextStyle(color: Colors.white),
         ),
         automaticallyImplyLeading: false,
@@ -66,7 +66,7 @@ class _HomeScreenState extends State<HomeScreen> {
     } else if (items.isEmpty) {
       return const Center(
         child: Text(
-          'Chưa có media nào',
+          'Chưa có bài viết nào',
           style: TextStyle(color: Colors.white70),
         ),
       );
@@ -154,7 +154,7 @@ class _HomeScreenState extends State<HomeScreen> {
         titleTextStyle: const TextStyle(color: Colors.white, fontSize: 20),
         contentTextStyle: const TextStyle(color: Colors.white70),
         title: const Text('Xác nhận xóa'),
-        content: const Text('Bạn có chắc chắn muốn xóa media này không?'),
+        content: const Text('Bạn có chắc chắn muốn xóa bài viết này không?'),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
