@@ -5,15 +5,14 @@ import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
 
 import 'firebase_options.dart';
 import 'providers/auth_provider.dart';
-import 'providers/media_provider.dart'; // Đảm bảo import MediaProvider
+import 'providers/media_provider.dart';
 import 'services/auth_service.dart';
 import 'services/user_service.dart';
 import 'screens/login_screen.dart';
+import 'screens/search_screen.dart';
+import 'screens/profile_screen.dart';
 import 'screens/signup_screen.dart';
-import 'screens/media_list_screen.dart'; // Thêm lại import MediaListScreen
-// Xóa import MainScreen đơn giản nếu không dùng nữa
-// import 'screens/home_screen.dart'; // Ví dụ
-// import 'screens/search_screen.dart'; // Ví dụ
+import 'screens/media_list_screen.dart';
 import 'theme/app_theme.dart';
 
 void main() async {
@@ -36,11 +35,9 @@ void main() async {
             context.read<UserService>(),
           ),
         ),
-        // === ĐẢM BẢO MEDIAPROVIDER ĐƯỢC CUNG CẤP ===
         ChangeNotifierProvider<MediaProvider>(
-          create: (_) => MediaProvider()..loadMedia(), // Giả sử hàm loadMedia tồn tại
+          create: (_) => MediaProvider()..loadMedia(),
         ),
-        // ===                                   ===
       ],
       child: const MyApp(),
     ),
@@ -54,13 +51,15 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Short Video App',
-      theme: AppTheme.lightTheme, // Sử dụng theme sáng (hoặc tối tùy bạn)
-      home: const AuthWrapper(), // Bắt đầu với AuthWrapper
+      theme: AppTheme.lightTheme,
+      home: const AuthWrapper(),
       routes: {
-        // Chỉ giữ lại route cần thiết cho luồng auth và màn hình chính
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignUpScreen(),
-        '/media': (context) => const MediaListScreen(), // Route cho màn hình chính
+        '/media': (context) => const MediaListScreen(),
+        '/search': (context) => const SearchScreen(),
+        // '/activity': (context) => const ActivityScreen(),
+        '/profile': (context) => const ProfileScreen(),
       },
       debugShowCheckedModeBanner: false,
     );
@@ -82,9 +81,7 @@ class AuthWrapper extends StatelessWidget {
       );
     } else if (authProvider.user != null) {
       print("AuthWrapper: User is logged in, navigating to MediaListScreen.");
-      // === THAY ĐỔI: Điều hướng đến MediaListScreen ===
       return const MediaListScreen();
-      // ===                                     ===
     } else {
       print("AuthWrapper: User is not logged in, showing LoginScreen.");
       return const LoginScreen();
