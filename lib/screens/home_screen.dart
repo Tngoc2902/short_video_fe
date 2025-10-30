@@ -6,14 +6,14 @@ import '../components/media_tile.dart';
 import '../models/media_model.dart';
 import 'create_post_screen.dart';
 
-class MediaListScreen extends StatefulWidget {
-  const MediaListScreen({super.key});
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
 
   @override
-  State<MediaListScreen> createState() => _MediaListScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
 
-class _MediaListScreenState extends State<MediaListScreen> {
+class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();

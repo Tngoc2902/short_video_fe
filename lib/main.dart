@@ -16,7 +16,7 @@ import 'services/post_service.dart'; // Service cho ProfileScreen
 // Import các màn hình
 import 'screens/login_screen.dart';
 import 'screens/signup_screen.dart';
-import 'screens/media_list_screen.dart'; // Màn hình Home (Tab 1)
+import 'screens/home_screen.dart'; // Màn hình Home (Tab 1)
 import 'screens/search_screen.dart';   // Màn hình Search (Tab 2)
 import 'screens/create_post_screen.dart'; // Màn hình Create Post (Tab 3)
 import 'screens/profile_screen.dart';   // Màn hình Profile (Tab 5)
@@ -67,7 +67,7 @@ class MyApp extends StatelessWidget {
         '/login': (context) => const LoginScreen(),
         '/signup': (context) => const SignUpScreen(),
         '/home': (context) => const MainScreen(),
-        '/media': (context) => const MediaListScreen(),
+        '/media': (context) => const HomeScreen(),
         '/search': (context) => const SearchScreen(),
         '/create_post': (context) => const CreatePostScreen(),
         '/profile': (context) => const ProfileScreen(),
@@ -113,7 +113,7 @@ class _MainScreenState extends State<MainScreen> {
 
   // Fix lỗi: thêm placeholder cho Activity (index 3)
   final List<Widget> _screens = [
-    const MediaListScreen(),    // Index 0: Home
+    const HomeScreen(),    // Index 0: Home
     const SearchScreen(),       // Index 1: Search
     const SizedBox.shrink(),    // Index 2: nút Add
     const SizedBox.shrink(),    // Index 3: Activity placeholder
