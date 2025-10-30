@@ -8,6 +8,7 @@ import 'video_editor_screen.dart';
 import 'finalize_post_screen.dart';
 import 'package:video_player/video_player.dart';
 
+
 class CreatePostScreen extends StatefulWidget {
   const CreatePostScreen({super.key});
   @override
@@ -146,18 +147,48 @@ class _CreatePostScreenState extends State<CreatePostScreen> {
   void _goNext() async {
     if (_selectedAssets.isEmpty) return;
     _videoController?.pause();
+
+    // Nếu chỉ có 1 file đã chọn
     if (_selectedAssets.length == 1 && _selectedAsset != null) {
       final asset = _selectedAsset!;
-      final result = await Navigator.push(context, MaterialPageRoute(builder: (_) => asset.type == AssetType.video ? VideoEditorScreen(asset: asset) : PhotoEditorScreen(asset: asset)));
+      final result = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => asset.type == AssetType.video
+              ? VideoEditorScreen(asset: asset)
+              : PhotoEditorScreen(asset: asset),
+        ),
+      );
+
       if (result != null && mounted) {
-        final fin = await Navigator.push(context, MaterialPageRoute(builder: (_) => FinalizePostScreen(editedMediaResult: result)));
+        // result là đường dẫn file đã chỉnh sửa
+        final fin = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => FinalizePostScreen(editedMediaResult: result),
+          ),
+        );
         if (fin == true && mounted) Navigator.of(context).pop(true);
       }
     } else {
-      final fin = await Navigator.push(context, MaterialPageRoute(builder: (_) => FinalizePostScreen(selectedAssets: _selectedAssets)));
+      // Nhiều file: chuyển AssetEntity sang File
+      List<File> files = [];
+      for (var asset in _selectedAssets) {
+        final file = await asset.file;
+        if (file != null) files.add(file);
+      }
+      if (files.isEmpty) return;
+
+      final fin = await Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (_) => FinalizePostScreen(selectedFiles: files),
+        ),
+      );
       if (fin == true && mounted) Navigator.of(context).pop(true);
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
