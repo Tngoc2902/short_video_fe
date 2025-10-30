@@ -31,14 +31,16 @@ class _MediaListScreenState extends State<MediaListScreen> {
     final provider = Provider.of<MediaProvider>(context);
     final items = provider.mediaList; // Lấy danh sách media
 
+    // MediaListScreen không cần Scaffold riêng khi là một tab,
+    // nhưng để nó tự hoạt động, chúng ta sẽ giữ lại Scaffold.
+    // MainScreen sẽ chỉ hiển thị body của Scaffold này.
     return Scaffold(
       backgroundColor: Colors.black, // Nền tối
       appBar: AppBar(
         backgroundColor: Colors.black, // Màu nền AppBar
         title: const Text('Thư viện Media', style: TextStyle(color: Colors.white)),
-        // Tự động thêm nút back nếu màn hình này không phải là màn hình đầu tiên
-        automaticallyImplyLeading: true,
-        iconTheme: const IconThemeData(color: Colors.white), // Màu icon back
+        // KHÔNG CÓ automaticallyImplyLeading, vì đây là tab chính
+        automaticallyImplyLeading: false,
         actions: [
           // Nút để điều hướng đến CreatePostScreen
           IconButton(
@@ -155,13 +157,16 @@ class _MediaListScreenState extends State<MediaListScreen> {
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
+        backgroundColor: Colors.grey[900], // Nền dialog
+        titleTextStyle: const TextStyle(color: Colors.white, fontSize: 20),
+        contentTextStyle: const TextStyle(color: Colors.white70),
         title: const Text('Xác nhận xóa'),
         content: const Text('Bạn có chắc chắn muốn xóa media này không?'),
         actions: [
           // Nút Hủy
           TextButton(
               onPressed: () => Navigator.pop(context), // Đóng dialog
-              child: const Text('Hủy')
+              child: const Text('Hủy', style: TextStyle(color: Colors.white))
           ),
           // Nút Xóa
           TextButton(

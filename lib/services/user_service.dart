@@ -1,48 +1,107 @@
+import 'dart:io'; // Thêm File
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart'; // Thêm Storage
+import 'package:firebase_auth/firebase_auth.dart' as FirebaseAuth;
+import '../models/user.dart';
 
 class UserService {
-  // Tham chiếu đến Cloud Firestore
-  final FirebaseFirestore _db = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseStorage _storage = FirebaseStorage.instance; // Thêm Storage
 
-  // 1. Tạo hồ sơ người dùng trong Firestore
-  //    Hàm này được gọi bởi AuthProvider NGAY SAU KHI đăng ký thành công
-  Future<void> createUserProfile(User user, String username) async {
+  // Lấy User ID hiện tại
+  String? get _currentUserId => FirebaseAuth.FirebaseAuth.instance.currentUser?.uid;
+
+  // Hàm tạo profile (Giữ nguyên)
+  Future<void> createUserProfile(FirebaseAuth.User user, String username) async {
+    final newUser = User(
+      id: user.uid,
+      username: username,
+      email: user.email ?? '',
+      followers: [],
+      following: [],
+      isFollowing: false,
+      avatarUrl: '',
+      status: 'ACTIVE',
+    );
+    var data = newUser.toJson();
+    data['createTime'] = FieldValue.serverTimestamp();
+    await _firestore.collection('users').doc(user.uid).set(data);
+  }
+
+  // Hàm kiểm tra username (Giữ nguyên)
+  Future<bool> checkUsernameAvailability(String username) async {
+    final result = await _firestore
+        .collection('users')
+        .where('username', isEqualTo: username)
+        .limit(1)
+        .get();
+    return result.docs.isEmpty;
+  }
+
+  // Hàm search users (Giữ nguyên)
+  Future<List<User>> searchUsers(String query) async {
+    if (query.isEmpty) return [];
+    final result = await _firestore
+        .collection('users')
+        .where('username', isGreaterThanOrEqualTo: query)
+        .where('username', isLessThanOrEqualTo: '$query\uf8ff')
+        .limit(10)
+        .get();
+    return result.docs.map((doc) => User.fromJson(doc.data())).toList();
+  }
+
+  // Hàm lấy danh sách following (Giữ nguyên)
+  Future<List<User>> getFollowingList(String userId) async {
+    if (userId.isEmpty) return [];
+    final userDoc = await _firestore.collection('users').doc(userId).get();
+    if (!userDoc.exists) return [];
+    final followingIds = List<String>.from(userDoc.data()?['following'] ?? []);
+    if (followingIds.isEmpty) return [];
+    final usersSnapshot = await _firestore
+        .collection('users')
+        .where(FieldPath.documentId, whereIn: followingIds)
+        .get();
+    return usersSnapshot.docs.map((doc) => User.fromJson(doc.data())).toList();
+  }
+
+  // Hàm lấy thông tin profile (Giữ nguyên)
+  Future<User> getUserProfile(String uid) async {
     try {
-      // Tạo một document mới trong collection 'users'
-      // với ID là ID của người dùng (user.uid)
-      await _db.collection('users').doc(user.uid).set({
-        'username': username,
-        'email': user.email,
-        'createdAt': FieldValue.serverTimestamp(),
-        // Bạn có thể thêm các trường khác ở đây, ví dụ:
-        // 'avatarUrl': 'url_avatar_mac_dinh',
-        // 'bio': ''
-      });
+      final doc = await _firestore.collection('users').doc(uid).get();
+      if (doc.exists) {
+        return User.fromJson(doc.data()!);
+      } else {
+        throw Exception('User not found in Firestore');
+      }
     } catch (e) {
-      throw Exception('Failed to create user profile: ${e.toString()}');
+      print("Error getting user profile: $e");
+      rethrow;
     }
   }
 
-  // 2. Kiểm tra xem username đã tồn tại chưa
-  //    Hàm này được gọi bởi AuthProvider khi người dùng gõ username
-  Future<bool> checkUsernameAvailability(String username) async {
+  // === HÀM MỚI: Tải Avatar lên Storage ===
+  Future<String> uploadAvatar(File imageFile, String uid) async {
     try {
-      // Tìm kiếm trong collection 'users' xem có doc nào có username này không
-      final result = await _db
-          .collection('users')
-          .where('username', isEqualTo: username)
-          .limit(1)
-          .get();
-
-      // Nếu kết quả tìm kiếm là trống (không có docs nào),
-      // có nghĩa là username CÓ SẴN (available)
-      return result.docs.isEmpty;
+      String filePath = 'avatars/$uid/avatar.jpg';
+      final ref = _storage.ref().child(filePath);
+      final uploadTask = ref.putFile(imageFile);
+      final snapshot = await uploadTask;
+      return await snapshot.ref.getDownloadURL();
     } catch (e) {
-      // Nếu có lỗi, an toàn nhất là trả về 'false' (không có sẵn)
-      // để tránh tạo trùng lặp
-      print('Error checking username: $e');
-      return false;
+      print("Error uploading avatar: $e");
+      throw Exception("Avatar upload failed");
+    }
+  }
+
+  // === HÀM MỚI: Cập nhật thông tin Profile ===
+  Future<void> updateUserProfile(String uid, Map<String, dynamic> data) async {
+    try {
+      // Thêm thời gian cập nhật
+      data['updateTime'] = FieldValue.serverTimestamp();
+      await _firestore.collection('users').doc(uid).update(data);
+    } catch (e) {
+      print("Error updating user profile: $e");
+      throw Exception("Profile update failed");
     }
   }
 }
