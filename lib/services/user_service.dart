@@ -1,17 +1,16 @@
-import 'dart:io'; // Thêm File
+import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart'; // Thêm Storage
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:firebase_auth/firebase_auth.dart' as FirebaseAuth;
 import '../models/user.dart';
 
 class UserService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance; // Thêm Storage
+  final FirebaseStorage _storage = FirebaseStorage.instance;
 
-  // Lấy User ID hiện tại
   String? get _currentUserId => FirebaseAuth.FirebaseAuth.instance.currentUser?.uid;
 
-  // Hàm tạo profile (Giữ nguyên)
+  // === TẠO PROFILE ===
   Future<void> createUserProfile(FirebaseAuth.User user, String username) async {
     final newUser = User(
       id: user.uid,
@@ -28,7 +27,7 @@ class UserService {
     await _firestore.collection('users').doc(user.uid).set(data);
   }
 
-  // Hàm kiểm tra username (Giữ nguyên)
+  // === KIỂM TRA TÊN NGƯỜI DÙNG ===
   Future<bool> checkUsernameAvailability(String username) async {
     final result = await _firestore
         .collection('users')
@@ -38,7 +37,7 @@ class UserService {
     return result.docs.isEmpty;
   }
 
-  // Hàm search users (Giữ nguyên)
+  // === TÌM KIẾM NGƯỜI DÙNG (TẤT CẢ) ===
   Future<List<User>> searchUsers(String query) async {
     if (query.isEmpty) return [];
     final result = await _firestore
@@ -50,7 +49,7 @@ class UserService {
     return result.docs.map((doc) => User.fromJson(doc.data())).toList();
   }
 
-  // Hàm lấy danh sách following (Giữ nguyên)
+  // === LẤY DANH SÁCH ĐANG THEO DÕI ===
   Future<List<User>> getFollowingList(String userId) async {
     if (userId.isEmpty) return [];
     final userDoc = await _firestore.collection('users').doc(userId).get();
@@ -64,26 +63,32 @@ class UserService {
     return usersSnapshot.docs.map((doc) => User.fromJson(doc.data())).toList();
   }
 
-  // Hàm lấy thông tin profile (Giữ nguyên)
-  Future<User> getUserProfile(String uid) async {
-    try {
-      final doc = await _firestore.collection('users').doc(uid).get();
-      if (doc.exists) {
-        return User.fromJson(doc.data()!);
-      } else {
-        throw Exception('User not found in Firestore');
-      }
-    } catch (e) {
-      print("Error getting user profile: $e");
-      rethrow;
-    }
+  // === TÌM KIẾM TRONG DANH SÁCH FOLLOWING ===
+  Future<List<User>> searchFollowing(String userId, String query) async {
+    if (userId.isEmpty) return [];
+    final followingList = await getFollowingList(userId);
+
+    if (query.isEmpty) return followingList;
+
+    final lowerQuery = query.toLowerCase();
+    return followingList
+        .where((u) =>
+    u.username.toLowerCase().contains(lowerQuery) ||
+        (u.nickname?.toLowerCase().contains(lowerQuery) ?? false))
+        .toList();
   }
 
-  // === HÀM MỚI: Tải Avatar lên Storage ===
+  // === LẤY PROFILE NGƯỜI DÙNG ===
+  Future<User> getUserProfile(String uid) async {
+    final doc = await _firestore.collection('users').doc(uid).get();
+    if (!doc.exists) throw Exception('User not found');
+    return User.fromJson(doc.data()!);
+  }
+
+  // === UPLOAD ẢNH ĐẠI DIỆN ===
   Future<String> uploadAvatar(File imageFile, String uid) async {
     try {
-      String filePath = 'avatars/$uid/avatar.jpg';
-      final ref = _storage.ref().child(filePath);
+      final ref = _storage.ref().child('avatars/$uid/avatar.jpg');
       final uploadTask = ref.putFile(imageFile);
       final snapshot = await uploadTask;
       return await snapshot.ref.getDownloadURL();
@@ -93,16 +98,14 @@ class UserService {
     }
   }
 
-  // === HÀM MỚI: Cập nhật thông tin Profile ===
+  // === CẬP NHẬT THÔNG TIN NGƯỜI DÙNG ===
   Future<void> updateUserProfile(String uid, Map<String, dynamic> data) async {
     try {
-      // Thêm thời gian cập nhật
       data['updateTime'] = FieldValue.serverTimestamp();
       await _firestore.collection('users').doc(uid).update(data);
     } catch (e) {
-      print("Error updating user profile: $e");
+      print("Error updating profile: $e");
       throw Exception("Profile update failed");
     }
   }
 }
-

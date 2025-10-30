@@ -1,19 +1,6 @@
 import 'package:flutter/material.dart';
+import '../models/location.dart'; // Chỉ import từ model
 
-// Model LocationResult
-class LocationResult {
-  final String name;
-  final double latitude;
-  final double longitude;
-
-  LocationResult({
-    required this.name,
-    required this.latitude,
-    required this.longitude,
-  });
-}
-
-// Màn hình chọn địa điểm
 class SelectLocationScreen extends StatefulWidget {
   final LocationResult? selected;
   final Function(LocationResult)? onSelected;
@@ -28,7 +15,7 @@ class SelectLocationScreen extends StatefulWidget {
 class _SelectLocationScreenState extends State<SelectLocationScreen> {
   LocationResult? _selectedLocation;
 
-  // Giả lập danh sách địa điểm
+  // Danh sách địa điểm giả lập
   final List<LocationResult> _locations = [
     LocationResult(name: 'Hà Nội', latitude: 21.0285, longitude: 105.8542),
     LocationResult(name: 'Hồ Chí Minh', latitude: 10.7626, longitude: 106.6602),
@@ -44,10 +31,8 @@ class _SelectLocationScreenState extends State<SelectLocationScreen> {
   }
 
   void _selectLocation(LocationResult location) {
-    setState(() {
-      _selectedLocation = location;
-    });
-    // Trả về kết quả cho màn hình trước
+    setState(() => _selectedLocation = location);
+    if (widget.onSelected != null) widget.onSelected!(location);
     Navigator.pop(context, location);
   }
 
@@ -69,12 +54,15 @@ class _SelectLocationScreenState extends State<SelectLocationScreen> {
           final location = _locations[index];
           final isSelected = _selectedLocation?.name == location.name;
           return ListTile(
-            title: Text(location.name, style: const TextStyle(color: Colors.white)),
+            title: Text(location.name,
+                style: const TextStyle(color: Colors.white)),
             subtitle: Text(
               'Lat: ${location.latitude}, Lng: ${location.longitude}',
               style: const TextStyle(color: Colors.white70, fontSize: 12),
             ),
-            trailing: isSelected ? const Icon(Icons.check, color: Colors.blue) : null,
+            trailing: isSelected
+                ? const Icon(Icons.check, color: Colors.blue)
+                : null,
             onTap: () => _selectLocation(location),
           );
         },
