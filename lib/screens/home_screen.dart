@@ -12,29 +12,33 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  final CollectionReference postsRef = FirebaseFirestore.instance.collection('posts');
-
-  Future<List<MediaModel>> fetchPosts() async {
-    final snapshot = await postsRef.orderBy('createdAt', descending: true).get();
-    return snapshot.docs.map((doc) => MediaModel.fromJson(doc.data() as Map<String, dynamic>, doc.id)).toList();
-  }
-
-  Future<void> deletePost(String id) async {
-    await postsRef.doc(id).delete();
-    setState(() {}); // refresh
-  }
+  final CollectionReference postsRef =
+  FirebaseFirestore.instance.collection('posts');
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(title: const Text('Home')),
-      body: FutureBuilder<List<MediaModel>>(
-        future: fetchPosts(),
+      body: StreamBuilder<QuerySnapshot>(
+        stream: postsRef.orderBy('createdAt', descending: true).snapshots(),
         builder: (context, snapshot) {
-          if (!snapshot.hasData) return const Center(child: CircularProgressIndicator(color: Colors.white));
-          final posts = snapshot.data!;
-          if (posts.isEmpty) return const Center(child: Text('No posts yet', style: TextStyle(color: Colors.white)));
+          if (snapshot.connectionState == ConnectionState.waiting) {
+            return const Center(
+                child: CircularProgressIndicator(color: Colors.white));
+          }
+
+          if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+            return const Center(
+                child: Text('No posts yet',
+                    style: TextStyle(color: Colors.white)));
+          }
+
+          final posts = snapshot.data!.docs
+              .map((doc) =>
+              MediaModel.fromJson(doc.data() as Map<String, dynamic>, doc.id))
+              .toList();
+
           return ListView.builder(
             itemCount: posts.length,
             itemBuilder: (context, index) {
@@ -44,11 +48,12 @@ class _HomeScreenState extends State<HomeScreen> {
                 onEdit: () async {
                   final result = await Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => EditPostScreen(media: media)),
+                    MaterialPageRoute(
+                        builder: (_) => EditPostScreen(media: media)),
                   );
                   if (result == true) setState(() {});
                 },
-                onDelete: () => deletePost(media.id),
+                onDelete: () => postsRef.doc(media.id).delete(),
               );
             },
           );

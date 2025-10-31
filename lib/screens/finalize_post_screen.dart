@@ -13,6 +13,8 @@ import 'select_location_screen.dart' hide LocationResult;
 import 'select_audio_screen.dart';
 import 'tag_friends_screen.dart';
 import 'package:firebase_auth/firebase_auth.dart' as auth;
+import 'dart:convert';
+
 
 class FinalizePostScreen extends StatefulWidget {
   final List<File>? selectedFiles;
@@ -74,6 +76,7 @@ class _FinalizePostScreenState extends State<FinalizePostScreen> {
   }
 
   Future<void> _sharePost() async {
+    // Kiểm tra có file để upload không
     if (_editedFile == null &&
         (widget.selectedFiles == null || widget.selectedFiles!.isEmpty)) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -83,28 +86,29 @@ class _FinalizePostScreenState extends State<FinalizePostScreen> {
     }
 
     setState(() => _isLoading = true);
+
     try {
-      // 🧩 Lấy user hiện tại từ Firebase Auth
+      // Lấy user hiện tại
       final user = auth.FirebaseAuth.instance.currentUser;
       if (user == null) {
         throw Exception("User not logged in");
       }
 
-      // 🧩 Lấy file để upload
+      // Lấy file để convert
       final file = _editedFile ?? widget.selectedFiles!.first;
       final isVideo = file.path.toLowerCase().endsWith('.mp4');
 
-      // 🧩 Upload lên Firebase Storage
-      final fileName = '${DateTime.now().millisecondsSinceEpoch}_${file.path.split('/').last}';
-      final ref = FirebaseStorage.instance.ref().child('media/$fileName');
-      await ref.putFile(file);
-      final downloadUrl = await ref.getDownloadURL();
+      // Đọc file thành bytes
+      final bytes = await file.readAsBytes();
 
-      // 🧩 Tạo đối tượng MediaModel
+      // Nếu là video, bạn có thể muốn lưu base64 (cẩn thận dung lượng lớn)
+      final base64Data = base64Encode(bytes);
+
+      // Tạo MediaModel
       final media = MediaModel(
         id: '',
-        mediaUrl: downloadUrl,
-        mediaBase64: null,
+        mediaUrl: '', // Không dùng Storage nữa
+        mediaBase64: base64Data,
         mediaType: isVideo ? 'video' : 'image',
         caption: _captionController.text,
         hashtags: _hashtagsController.text
@@ -119,19 +123,20 @@ class _FinalizePostScreenState extends State<FinalizePostScreen> {
         createdAt: DateTime.now(),
       );
 
-      // 🧩 Lưu lên Firestore
+      // Lưu lên Firestore
       final doc = await FirebaseFirestore.instance
-          .collection('media')
+          .collection('posts')
           .add(media.toJson());
 
-      // Cập nhật ID thực tế
+      // Cập nhật id
       await doc.update({'id': doc.id});
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-              content: Text('Post created successfully'),
-              backgroundColor: Colors.green),
+            content: Text('Post created successfully'),
+            backgroundColor: Colors.green,
+          ),
         );
         Navigator.pop(context, true);
       }
@@ -144,6 +149,7 @@ class _FinalizePostScreenState extends State<FinalizePostScreen> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
+
 
   Widget _buildPreview() {
     if (_editedFile != null) {

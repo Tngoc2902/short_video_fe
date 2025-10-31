@@ -28,7 +28,19 @@ class MediaCard extends StatelessWidget {
             if (media.mediaType == 'video')
               VideoPlayerWidget(url: media.mediaUrl)
             else
-              Image.network(media.mediaUrl, fit: BoxFit.cover),
+              Image.network(
+                media.mediaUrl,
+                fit: BoxFit.cover,
+                loadingBuilder: (context, child, loadingProgress) {
+                  if (loadingProgress == null) return child;
+                  return const Center(
+                      child: CircularProgressIndicator(color: Colors.white));
+                },
+                errorBuilder: (context, error, stackTrace) {
+                  return const Icon(Icons.broken_image,
+                      size: 50, color: Colors.red);
+                },
+              ),
 
             const SizedBox(height: 8),
 
@@ -49,11 +61,19 @@ class MediaCard extends StatelessWidget {
 
             // Location
             if (media.location.isNotEmpty)
-              Text('Location: ${media.location}', style: const TextStyle(color: Colors.greenAccent)),
+              Text('Location: ${media.location}',
+                  style: const TextStyle(color: Colors.greenAccent)),
 
             // Audio
             if (media.audioName.isNotEmpty)
-              Text('Audio: ${media.audioName}', style: const TextStyle(color: Colors.purpleAccent)),
+              Text('Audio: ${media.audioName}',
+                  style: const TextStyle(color: Colors.purpleAccent)),
+
+            // Thời gian đăng
+            Text(
+              'Posted: ${media.createdAt.toLocal()}',
+              style: const TextStyle(color: Colors.grey, fontSize: 12),
+            ),
 
             const SizedBox(height: 8),
 
@@ -66,7 +86,8 @@ class MediaCard extends StatelessWidget {
                 if (onDelete != null)
                   TextButton(
                       onPressed: onDelete,
-                      child: const Text('Delete', style: TextStyle(color: Colors.red))),
+                      child: const Text('Delete',
+                          style: TextStyle(color: Colors.red))),
               ],
             ),
           ],
