@@ -6,11 +6,18 @@ class MediaService {
   FirebaseFirestore.instance.collection('posts');
 
   Future<List<MediaModel>> loadAll() async {
-    final snapshot =
-    await _postsRef.orderBy('createdAt', descending: true).get();
-    return snapshot.docs
-        .map((doc) => MediaModel.fromJson(doc.data() as Map<String, dynamic>, doc.id))
-        .toList();
+    try {
+      final snapshot =
+      await _postsRef.orderBy('createdAt', descending: true).get();
+      print("✅ Loaded ${snapshot.docs.length} posts");
+      return snapshot.docs
+          .map((doc) =>
+          MediaModel.fromJson(doc.data() as Map<String, dynamic>, doc.id))
+          .toList();
+    } catch (e) {
+      print("❌ Error loading posts: $e");
+      return [];
+    }
   }
 
   Future<void> add(MediaModel media) async {

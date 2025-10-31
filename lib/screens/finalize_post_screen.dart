@@ -1,20 +1,28 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/material.dart';
 import 'package:video_player/video_player.dart';
 import 'package:path_provider/path_provider.dart';
 import '../models/audio.dart';
 import '../models/user.dart';
 import '../models/location.dart';
+import '../models/media_model.dart';
 import 'select_location_screen.dart' hide LocationResult;
 import 'select_audio_screen.dart';
 import 'tag_friends_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart' as auth;
 
 class FinalizePostScreen extends StatefulWidget {
   final List<File>? selectedFiles;
   final dynamic editedMediaResult;
 
-  const FinalizePostScreen({super.key, this.selectedFiles, this.editedMediaResult});
+  const FinalizePostScreen({
+    super.key,
+    this.selectedFiles,
+    this.editedMediaResult,
+  });
 
   @override
   State<FinalizePostScreen> createState() => _FinalizePostScreenState();
@@ -23,11 +31,14 @@ class FinalizePostScreen extends StatefulWidget {
 class _FinalizePostScreenState extends State<FinalizePostScreen> {
   final TextEditingController _captionController = TextEditingController();
   final TextEditingController _hashtagsController = TextEditingController();
+
   VideoPlayerController? _videoController;
   File? _editedFile;
+
   List<User> _taggedUsers = [];
   Audio? _selectedAudio;
   LocationResult? _selectedLocation;
+
   bool _isLoading = false;
 
   @override
@@ -44,6 +55,7 @@ class _FinalizePostScreenState extends State<FinalizePostScreen> {
 
   Future<void> _prepareMedia() async {
     if (widget.editedMediaResult == null) return;
+
     final result = widget.editedMediaResult;
     if (result is Uint8List) {
       final temp = await getTemporaryDirectory();
@@ -59,6 +71,112 @@ class _FinalizePostScreenState extends State<FinalizePostScreen> {
           _videoController?.setLooping(true);
         });
     }
+  }
+
+  Future<void> _sharePost() async {
+    if (_editedFile == null &&
+        (widget.selectedFiles == null || widget.selectedFiles!.isEmpty)) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('No media selected')),
+      );
+      return;
+    }
+
+    setState(() => _isLoading = true);
+    try {
+      // 🧩 Lấy user hiện tại từ Firebase Auth
+      final user = auth.FirebaseAuth.instance.currentUser;
+      if (user == null) {
+        throw Exception("User not logged in");
+      }
+
+      // 🧩 Lấy file để upload
+      final file = _editedFile ?? widget.selectedFiles!.first;
+      final isVideo = file.path.toLowerCase().endsWith('.mp4');
+
+      // 🧩 Upload lên Firebase Storage
+      final fileName = '${DateTime.now().millisecondsSinceEpoch}_${file.path.split('/').last}';
+      final ref = FirebaseStorage.instance.ref().child('media/$fileName');
+      await ref.putFile(file);
+      final downloadUrl = await ref.getDownloadURL();
+
+      // 🧩 Tạo đối tượng MediaModel
+      final media = MediaModel(
+        id: '',
+        mediaUrl: downloadUrl,
+        mediaBase64: null,
+        mediaType: isVideo ? 'video' : 'image',
+        caption: _captionController.text,
+        hashtags: _hashtagsController.text
+            .split(' ')
+            .where((t) => t.isNotEmpty)
+            .toList(),
+        tags: _taggedUsers.map((u) => u.username).toList(),
+        location: _selectedLocation?.name ?? '',
+        audioUrl: _selectedAudio?.url ?? '',
+        audioName: _selectedAudio?.name ?? '',
+        userId: user.uid,
+        createdAt: DateTime.now(),
+      );
+
+      // 🧩 Lưu lên Firestore
+      final doc = await FirebaseFirestore.instance
+          .collection('media')
+          .add(media.toJson());
+
+      // Cập nhật ID thực tế
+      await doc.update({'id': doc.id});
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+              content: Text('Post created successfully'),
+              backgroundColor: Colors.green),
+        );
+        Navigator.pop(context, true);
+      }
+    } catch (e) {
+      debugPrint('Upload failed: $e');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Error: $e')),
+      );
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
+  }
+
+  Widget _buildPreview() {
+    if (_editedFile != null) {
+      if (_videoController != null && _videoController!.value.isInitialized) {
+        return AspectRatio(
+          aspectRatio: _videoController!.value.aspectRatio,
+          child: VideoPlayer(_videoController!),
+        );
+      } else {
+        return Image.file(_editedFile!, fit: BoxFit.cover);
+      }
+    } else if (widget.selectedFiles != null &&
+        widget.selectedFiles!.isNotEmpty) {
+      final file = widget.selectedFiles!.first;
+      if (file.path.toLowerCase().endsWith('.mp4')) {
+        _videoController = VideoPlayerController.file(file)
+          ..initialize().then((_) {
+            setState(() {});
+            _videoController?.play();
+            _videoController?.setLooping(true);
+          });
+        return AspectRatio(
+          aspectRatio: _videoController!.value.aspectRatio,
+          child: VideoPlayer(_videoController!),
+        );
+      } else {
+        return Image.file(file, fit: BoxFit.cover);
+      }
+    }
+    return Container(
+      color: Colors.grey[800],
+      child: const Center(child: Icon(Icons.image, color: Colors.white)),
+    );
   }
 
   void _openTagFriends() async {
@@ -94,40 +212,6 @@ class _FinalizePostScreenState extends State<FinalizePostScreen> {
     if (result != null) setState(() => _selectedLocation = result);
   }
 
-  Future<void> _sharePost() async {
-    setState(() => _isLoading = true);
-    await Future.delayed(const Duration(seconds: 1)); // simulate upload
-    if (mounted) {
-      ScaffoldMessenger.of(context)
-          .showSnackBar(const SnackBar(content: Text('Post created'), backgroundColor: Colors.green));
-      Navigator.pop(context, true);
-    }
-  }
-
-  Widget _buildPreview() {
-    if (_editedFile != null) {
-      if (_videoController != null && _videoController!.value.isInitialized) {
-        return AspectRatio(aspectRatio: _videoController!.value.aspectRatio, child: VideoPlayer(_videoController!));
-      } else {
-        return Image.file(_editedFile!, fit: BoxFit.cover);
-      }
-    } else if (widget.selectedFiles != null && widget.selectedFiles!.isNotEmpty) {
-      final file = widget.selectedFiles!.first;
-      if (file.path.toLowerCase().endsWith('.mp4')) {
-        _videoController = VideoPlayerController.file(file)
-          ..initialize().then((_) {
-            setState(() {});
-            _videoController?.play();
-            _videoController?.setLooping(true);
-          });
-        return AspectRatio(aspectRatio: _videoController!.value.aspectRatio, child: VideoPlayer(_videoController!));
-      } else {
-        return Image.file(file, fit: BoxFit.cover);
-      }
-    }
-    return Container(color: Colors.grey[800], child: const Center(child: Icon(Icons.image, color: Colors.white)));
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -135,14 +219,23 @@ class _FinalizePostScreenState extends State<FinalizePostScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
-        leading: IconButton(icon: const Icon(Icons.arrow_back, color: Colors.white), onPressed: () => Navigator.pop(context)),
-        title: const Text('New Post', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+        title: const Text(
+          'New Post',
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
         actions: [
           TextButton(
             onPressed: _isLoading ? null : _sharePost,
             child: _isLoading
-                ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
-                : const Text('Share', style: TextStyle(color: Colors.blue, fontWeight: FontWeight.bold)),
+                ? const SizedBox(
+                width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2))
+                : const Text('Share',
+                style: TextStyle(
+                    color: Colors.blue, fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -152,7 +245,14 @@ class _FinalizePostScreenState extends State<FinalizePostScreen> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(children: [
-              SizedBox(width: 64, height: 64, child: ClipRRect(borderRadius: BorderRadius.circular(12), child: _buildPreview())),
+              SizedBox(
+                width: 64,
+                height: 64,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: _buildPreview(),
+                ),
+              ),
               const SizedBox(width: 12),
               Expanded(
                 child: TextField(
@@ -172,22 +272,28 @@ class _FinalizePostScreenState extends State<FinalizePostScreen> {
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.alternate_email, color: Colors.white),
-              title: const Text('Tag friends', style: TextStyle(color: Colors.white)),
-              trailing: const Icon(Icons.chevron_right, color: Colors.white54),
+              title:
+              const Text('Tag friends', style: TextStyle(color: Colors.white)),
+              trailing:
+              const Icon(Icons.chevron_right, color: Colors.white54),
               onTap: _openTagFriends,
             ),
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.music_note, color: Colors.white),
-              title: const Text('Add music', style: TextStyle(color: Colors.white)),
-              trailing: const Icon(Icons.chevron_right, color: Colors.white54),
+              title:
+              const Text('Add music', style: TextStyle(color: Colors.white)),
+              trailing:
+              const Icon(Icons.chevron_right, color: Colors.white54),
               onTap: _openSelectAudio,
             ),
             ListTile(
               contentPadding: EdgeInsets.zero,
               leading: const Icon(Icons.location_on, color: Colors.white),
-              title: const Text('Add location', style: TextStyle(color: Colors.white)),
-              trailing: const Icon(Icons.chevron_right, color: Colors.white54),
+              title:
+              const Text('Add location', style: TextStyle(color: Colors.white)),
+              trailing:
+              const Icon(Icons.chevron_right, color: Colors.white54),
               onTap: _openSelectLocation,
             ),
             Divider(color: Colors.white24, height: 24),

@@ -47,7 +47,7 @@ void main() async {
           ),
         ),
         ChangeNotifierProvider<MediaProvider>(
-          create: (_) => MediaProvider()..loadMedia(),
+          create: (_) => MediaProvider()..fetchMedia(),
         ),
       ],
       child: const MyApp(),
