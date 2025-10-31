@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'dart:async';
-import '../providers/auth_provider.dart';
-// import '../models/user.dart';
-// import 'profile_screen.dart';
-
+import 'dart:async'; // Cho Timer (debounce)
+import '../providers/auth_provider.dart'; // Để gọi hàm search
+import '../models/user.dart'; // Import 'User' model
+import 'other_user_profile_screen.dart'; // Import màn hình profile
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -24,13 +23,11 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
-  // Hàm xử lý khi gõ tìm kiếm
+  // Hàm xử lý khi gõ tìm kiếm (Đã đúng)
   void _onSearchChanged(String query) {
-    // Hủy timer cũ (nếu có)
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 500), () {
       if (mounted) {
-        // Gọi hàm search từ AuthProvider
         Provider.of<AuthProvider>(context, listen: false).searchUsers(query);
       }
     });
@@ -43,7 +40,6 @@ class _SearchScreenState extends State<SearchScreen> {
       appBar: AppBar(
         backgroundColor: Colors.black,
         elevation: 0,
-        // Thanh tìm kiếm
         title: Container(
           height: 40,
           decoration: BoxDecoration(
@@ -59,32 +55,28 @@ class _SearchScreenState extends State<SearchScreen> {
               border: InputBorder.none,
               prefixIcon: Icon(Icons.search, color: Colors.white54),
             ),
-            onChanged: _onSearchChanged, // Gọi hàm khi gõ
+            onChanged: _onSearchChanged,
           ),
         ),
       ),
       body: GestureDetector(
-        onTap: () => FocusScope.of(context).unfocus(), // Ẩn bàn phím khi nhấn ra ngoài
-        child: _buildSearchResults(), // Hiển thị kết quả
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: _buildSearchResults(),
       ),
     );
   }
 
   // Widget hiển thị kết quả tìm kiếm
   Widget _buildSearchResults() {
-    // Lắng nghe trạng thái searching và kết quả từ AuthProvider
     return Consumer<AuthProvider>(
       builder: (context, authProvider, child) {
         if (authProvider.isSearching) {
-          // Hiển thị loading khi đang tìm
           return const Center(
             child: CircularProgressIndicator(color: Colors.white),
           );
         }
 
-        if (authProvider.searchResults.isEmpty &&
-            _searchController.text.isNotEmpty) {
-          // Không tìm thấy kết quả
+        if (authProvider.searchResults.isEmpty && _searchController.text.isNotEmpty) {
           return const Center(
             child: Text(
               'Không tìm thấy người dùng.',
@@ -93,9 +85,7 @@ class _SearchScreenState extends State<SearchScreen> {
           );
         }
 
-        if (authProvider.searchResults.isEmpty &&
-            _searchController.text.isEmpty) {
-          // Màn hình trống ban đầu
+        if (authProvider.searchResults.isEmpty && _searchController.text.isEmpty) {
           return const Center(
             child: Text(
               'Nhập tên người dùng để tìm kiếm.',
@@ -104,13 +94,10 @@ class _SearchScreenState extends State<SearchScreen> {
           );
         }
 
-        // Hiển thị danh sách kết quả
         return ListView.builder(
           itemCount: authProvider.searchResults.length,
           itemBuilder: (context, index) {
-            // 'user' ở đây sẽ là 'User' (từ user.dart)
             final user = authProvider.searchResults[index];
-
             return ListTile(
               leading: CircleAvatar(
                 radius: 24,
@@ -130,19 +117,23 @@ class _SearchScreenState extends State<SearchScreen> {
                 ),
               ),
               subtitle: Text(
-                user.email, // Hiển thị email
+                user.nickname ?? user.email, // Hiển thị nickname hoặc email
                 style: const TextStyle(color: Colors.grey),
               ),
-              // onTap: () {
-              //   // Điều hướng đến trang profile của người đó
-              //   Navigator.push(
-              //     // context,
-              //     // MaterialPageRoute(
-              //     //   // 'OtherUserProfileScreen' cũng phải chấp nhận 'User'
-              //     //   // builder: (context) => OtherUserProfileScreen(user: user),
-              //     // ),
-              //   );
-              // },
+              // === SỬA LỖI TẠI ĐÂY: Bỏ comment và thêm điều hướng ===
+              onTap: () {
+                // Ẩn bàn phím
+                FocusScope.of(context).unfocus();
+                // Điều hướng đến trang profile của người đó
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    // Truyền 'userId' (chứ không phải toàn bộ object 'user')
+                    builder: (context) => OtherUserProfileScreen(userId: user.id),
+                  ),
+                );
+              },
+              // === KẾT THÚC SỬA LỖI ===
             );
           },
         );

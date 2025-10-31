@@ -6,10 +6,11 @@ class User {
   final String email;
   final String? profilePicture;
   final String? bio;
+
   final List<String> followers; // Danh sách các UID
   final List<String> following; // Danh sách các UID
 
-  final bool isFollowing; // (Trường này có thể không cần lưu trữ trong DB, mà nên tính toán)
+  final bool isFollowing;
   final String avatarUrl;
   final String status;
   final DateTime? createTime;
@@ -24,8 +25,8 @@ class User {
     required this.email,
     this.profilePicture,
     this.bio,
-    required this.followers, // Yêu cầu List<String>
-    required this.following, // Yêu cầu List<String>
+    required this.followers,
+    required this.following,
     required this.isFollowing,
     required this.avatarUrl,
     required this.status,
@@ -36,24 +37,51 @@ class User {
     this.gender,
   });
 
+  // === SỬA: Thêm factory 'fromSnapshot' ===
+  /// Tạo User từ DocumentSnapshot (lấy cả doc.id)
+  factory User.fromSnapshot(DocumentSnapshot snap) {
+    final data = snap.data() as Map<String, dynamic>? ?? {}; // An toàn null
+
+    return User(
+      id: snap.id, // <-- SỬA LỖI QUAN TRỌNG: Lấy ID từ snapshot
+      username: data['username'] ?? '',
+      email: data['email'] ?? '',
+      profilePicture: data['profilePicture'],
+      bio: data['bio'],
+      followers: List<String>.from(data['followers'] ?? []),
+      following: List<String>.from(data['following'] ?? []),
+      isFollowing: data['isFollowing'] ?? false,
+      avatarUrl: data['avatarUrl'] ?? '',
+      status: data['status'] ?? 'ACTIVE',
+      createTime: (data['createTime'] is Timestamp)
+          ? (data['createTime'] as Timestamp).toDate()
+          : (data['createTime'] != null
+          ? DateTime.tryParse(data['createTime'])
+          : null),
+      updateTime: (data['updateTime'] is Timestamp)
+          ? (data['updateTime'] as Timestamp).toDate()
+          : (data['updateTime'] != null
+          ? DateTime.tryParse(data['updateTime'])
+          : null),
+      nickname: data['nickname'],
+      link: data['link'],
+      gender: data['gender'],
+    );
+  }
+
+  // fromJson dùng khi data đã có sẵn 'id' (ví dụ: từ API khác)
   factory User.fromJson(Map<String, dynamic> json) {
     return User(
-      id: json['id']?.toString() ?? json['uid'] ?? '', // Thêm uid để tương thích
+      id: json['id']?.toString() ?? json['uid'] ?? '',
       username: json['username'] ?? '',
       email: json['email'] ?? '',
       profilePicture: json['profilePicture'],
       bio: json['bio'],
-
-      // === THAY ĐỔI: Chuyển đổi List<dynamic> sang List<String> ===
       followers: List<String>.from(json['followers'] ?? []),
       following: List<String>.from(json['following'] ?? []),
-      // === KẾT THÚC THAY ĐỔI ===
-
       isFollowing: json['isFollowing'] ?? false,
       avatarUrl: json['avatarUrl'] ?? '',
       status: json['status'] ?? 'ACTIVE',
-
-      // Chuyển đổi Timestamp (từ Firestore) hoặc String
       createTime: (json['createTime'] is Timestamp)
           ? (json['createTime'] as Timestamp).toDate()
           : (json['createTime'] != null
@@ -64,29 +92,28 @@ class User {
           : (json['updateTime'] != null
           ? DateTime.tryParse(json['updateTime'])
           : null),
-
       nickname: json['nickname'],
       link: json['link'],
       gender: json['gender'],
     );
   }
 
+  // toJson() để ghi lên Firestore (Đã chính xác)
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'uid': id, // Thêm uid để truy vấn dễ dàng
+      'uid': id,
       'username': username,
       'email': email,
       'profilePicture': profilePicture,
       'bio': bio,
-      'followers': followers, // Lưu List<String>
-      'following': following, // Lưu List<String>
+      'followers': followers,
+      'following': following,
       'isFollowing': isFollowing,
       'avatarUrl': avatarUrl,
       'status': status,
-      // Nên dùng FieldValue.serverTimestamp() khi tạo/cập nhật
-      'createTime': createTime?.toIso8601String(),
-      'updateTime': updateTime?.toIso8601String(),
+      'createTime': createTime,
+      'updateTime': updateTime,
       'nickname': nickname,
       'link': link,
       'gender': gender,

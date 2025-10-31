@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
+import 'package:short_video_fe/screens/activity_screen.dart';
 
 // Import các tệp Firebase
 import 'firebase_options.dart';
@@ -71,6 +72,7 @@ class MyApp extends StatelessWidget {
         '/search': (context) => const SearchScreen(),
         '/create_post': (context) => const CreatePostScreen(),
         '/profile': (context) => const ProfileScreen(),
+        '/activity':(context) => const ActivityScreen(),
       },
       debugShowCheckedModeBanner: false,
     );
@@ -116,7 +118,7 @@ class _MainScreenState extends State<MainScreen> {
     const HomeScreen(),    // Index 0: Home
     const SearchScreen(),       // Index 1: Search
     const SizedBox.shrink(),    // Index 2: nút Add
-    const SizedBox.shrink(),    // Index 3: Activity placeholder
+    const SizedBox.shrink(),    // Index 3: Activity
     const ProfileScreen(),      // Index 4: Profile
   ];
 
