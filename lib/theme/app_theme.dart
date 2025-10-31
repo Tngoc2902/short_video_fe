@@ -1,11 +1,27 @@
 import 'package:flutter/material.dart';
-import '../constants/app_colors.dart';
 
 class AppTheme {
-  static final lightTheme = ThemeData(
+  // Light theme
+  static ThemeData get lightTheme => ThemeData(
+    brightness: Brightness.light,
+    primarySwatch: Colors.blue,
+    scaffoldBackgroundColor: Colors.white,
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Colors.white,
+      foregroundColor: Colors.black,
+      elevation: 0,
+    ),
+  );
+
+  // Dark theme
+  static ThemeData get darkTheme => ThemeData(
     brightness: Brightness.dark,
-    scaffoldBackgroundColor: AppColors.background,
-    appBarTheme: const AppBarTheme(backgroundColor: AppColors.background, elevation: 0),
-    floatingActionButtonTheme: const FloatingActionButtonThemeData(backgroundColor: AppColors.accent),
+    primarySwatch: Colors.blue,
+    scaffoldBackgroundColor: Colors.black,
+    appBarTheme: const AppBarTheme(
+      backgroundColor: Colors.black,
+      foregroundColor: Colors.white,
+      elevation: 0,
+    ),
   );
 }

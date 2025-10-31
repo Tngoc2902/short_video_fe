@@ -2,30 +2,28 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import 'package:firebase_auth/firebase_auth.dart' hide AuthProvider;
-import 'package:short_video_fe/screens/activity_screen.dart';
-
-// Import các tệp Firebase
 import 'firebase_options.dart';
 
-// Import các Provider và Service cốt lõi của MVP
+// Providers & Services
 import 'providers/auth_provider.dart';
 import 'providers/media_provider.dart';
 import 'services/auth_service.dart';
 import 'services/user_service.dart';
-import 'services/post_service.dart'; // Service cho ProfileScreen
+import 'services/post_service.dart';
 
-// Import các màn hình
+// Screens
 import 'screens/login_screen.dart';
 import 'screens/signup_screen.dart';
-import 'screens/home_screen.dart'; // Màn hình Home (Tab 1)
-import 'screens/search_screen.dart';   // Màn hình Search (Tab 2)
-import 'screens/create_post_screen.dart'; // Màn hình Create Post (Tab 3)
-import 'screens/profile_screen.dart';   // Màn hình Profile (Tab 5)
+import 'screens/home_screen.dart';
+import 'screens/search_screen.dart';
+import 'screens/create_post_screen.dart';
+import 'screens/profile_screen.dart';
+import 'screens/activity_screen.dart';
+
 import 'theme/app_theme.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-
   await Firebase.initializeApp(
     options: DefaultFirebaseOptions.currentPlatform,
   );
@@ -62,7 +60,7 @@ class MyApp extends StatelessWidget {
   Widget build(BuildContext context) {
     return MaterialApp(
       title: 'Short Video App',
-      theme: AppTheme.lightTheme,
+      theme: AppTheme.darkTheme,
       home: const AuthWrapper(),
       routes: {
         '/login': (context) => const LoginScreen(),
@@ -72,7 +70,7 @@ class MyApp extends StatelessWidget {
         '/search': (context) => const SearchScreen(),
         '/create_post': (context) => const CreatePostScreen(),
         '/profile': (context) => const ProfileScreen(),
-        '/activity':(context) => const ActivityScreen(),
+        '/activity': (context) => const ActivityScreen(),
       },
       debugShowCheckedModeBanner: false,
     );
@@ -85,21 +83,13 @@ class AuthWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final authProvider = Provider.of<AuthProvider>(context);
-
     if (authProvider.isLoading) {
       return const Scaffold(
         backgroundColor: Colors.black,
-        body: Center(
-          child: CircularProgressIndicator(color: Colors.white),
-        ),
+        body: Center(child: CircularProgressIndicator(color: Colors.white)),
       );
     }
-
-    if (authProvider.user != null) {
-      return const MainScreen();
-    } else {
-      return const LoginScreen();
-    }
+    return authProvider.user != null ? const MainScreen() : const LoginScreen();
   }
 }
 
@@ -112,27 +102,25 @@ class MainScreen extends StatefulWidget {
 
 class _MainScreenState extends State<MainScreen> {
   int _currentIndex = 0;
-
-  // Fix lỗi: thêm placeholder cho Activity (index 3)
   final List<Widget> _screens = [
-    const HomeScreen(),    // Index 0: Home
-    const SearchScreen(),       // Index 1: Search
-    const SizedBox.shrink(),    // Index 2: nút Add
-    const SizedBox.shrink(),    // Index 3: Activity
-    const ProfileScreen(),      // Index 4: Profile
+    const HomeScreen(),
+    const SearchScreen(),
+    const SizedBox.shrink(), // Add Post button placeholder
+    const SizedBox.shrink(), // Activity placeholder
+    const ProfileScreen(),
   ];
 
   void _onTabTapped(int index) {
     if (index == 2) {
+      // Chuyển sang màn tạo bài đăng
       Navigator.pushNamed(context, '/create_post').then((result) {
         if (result == true) {
-          print("Quay lại từ CreatePost. Cần refresh feed.");
+          // refresh feed sau khi tạo bài
+          context.read<MediaProvider>().fetchMedia();
         }
       });
     } else {
-      setState(() {
-        _currentIndex = index;
-      });
+      setState(() => _currentIndex = index);
     }
   }
 
