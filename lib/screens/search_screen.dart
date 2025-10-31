@@ -23,7 +23,7 @@ class _SearchScreenState extends State<SearchScreen> {
     super.dispose();
   }
 
-  // Hàm xử lý khi gõ tìm kiếm (Đã đúng)
+  // Hàm xử lý khi gõ tìm kiếm
   void _onSearchChanged(String query) {
     _debounceTimer?.cancel();
     _debounceTimer = Timer(const Duration(milliseconds: 500), () {
@@ -120,20 +120,17 @@ class _SearchScreenState extends State<SearchScreen> {
                 user.nickname ?? user.email, // Hiển thị nickname hoặc email
                 style: const TextStyle(color: Colors.grey),
               ),
-              // === SỬA LỖI TẠI ĐÂY: Bỏ comment và thêm điều hướng ===
               onTap: () {
-                // Ẩn bàn phím
                 FocusScope.of(context).unfocus();
                 // Điều hướng đến trang profile của người đó
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    // Truyền 'userId' (chứ không phải toàn bộ object 'user')
+                    // Truyền 'userId'
                     builder: (context) => OtherUserProfileScreen(userId: user.id),
                   ),
                 );
               },
-              // === KẾT THÚC SỬA LỖI ===
             );
           },
         );
