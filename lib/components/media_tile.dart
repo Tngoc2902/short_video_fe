@@ -1,35 +1,72 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:video_player/video_player.dart';
 import '../models/media_model.dart';
 
-class MediaTile extends StatelessWidget {
+class MediaTile extends StatefulWidget {
   final MediaModel media;
-  final VoidCallback? onDelete;
   final VoidCallback? onTap;
-  const MediaTile({super.key, required this.media, this.onDelete, this.onTap});
+  final VoidCallback? onDelete;
+
+  const MediaTile({
+    super.key,
+    required this.media,
+    this.onTap,
+    this.onDelete,
+  });
+
+  @override
+  State<MediaTile> createState() => _MediaTileState();
+}
+
+class _MediaTileState extends State<MediaTile> {
+  VideoPlayerController? _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.media.mediaType == 'video') {
+      _controller = VideoPlayerController.network(widget.media.mediaUrl)
+        ..initialize().then((_) {
+          setState(() {});
+          _controller?.play();
+          _controller?.setLooping(true);
+        });
+    }
+  }
+
+  @override
+  void dispose() {
+    _controller?.dispose();
+    super.dispose();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isImage = media.type == 'image';
+    Widget mediaWidget;
+    if (widget.media.mediaType == 'video' && _controller != null && _controller!.value.isInitialized) {
+      mediaWidget = AspectRatio(
+        aspectRatio: _controller!.value.aspectRatio,
+        child: VideoPlayer(_controller!),
+      );
+    } else {
+      mediaWidget = Image.network(widget.media.mediaUrl, fit: BoxFit.cover);
+    }
+
     return GestureDetector(
-      onTap: onTap,
-      child: Card(
-        color: const Color(0xFF161616),
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-        child: Column(children: [
-          Expanded(
-            child: ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(12)),
-              child: isImage ? Image.file(File(media.path), width: double.infinity, fit: BoxFit.cover) : Container(color: Colors.black26, child: const Center(child: Icon(Icons.videocam, color: Colors.white70, size: 40))),
+      onTap: widget.onTap,
+      child: Stack(
+        children: [
+          Positioned.fill(child: mediaWidget),
+          if (widget.onDelete != null)
+            Positioned(
+              top: 4,
+              right: 4,
+              child: IconButton(
+                icon: const Icon(Icons.delete, color: Colors.red),
+                onPressed: widget.onDelete,
+              ),
             ),
-          ),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
-            child: Row(children: [
-              Expanded(child: Text(media.path.split('/').last, style: const TextStyle(color: Colors.white, fontSize: 13), overflow: TextOverflow.ellipsis)),
-              IconButton(icon: const Icon(Icons.delete, color: Colors.redAccent), onPressed: onDelete)
-            ]),
-          ),
-        ]),
+        ],
       ),
     );
   }
