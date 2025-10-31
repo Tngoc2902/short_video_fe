@@ -168,7 +168,7 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  // Hàm tìm kiếm user (Giữ nguyên)
+  // Hàm tìm kiếm user
   Future<void> searchUsers(String query) async {
     if (query.isEmpty) {
       _searchResults = [];
@@ -177,7 +177,7 @@ class AuthProvider with ChangeNotifier {
       return;
     }
     _isSearching = true;
-    _error = null; // Xóa lỗi cũ
+    _error = null;
     notifyListeners();
     try {
       // Gọi UserService (đã được sửa để trả về List<User>)
@@ -190,7 +190,7 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  // Hàm xóa lỗi (Giữ nguyên)
+  // Hàm xóa lỗi
   void clearError() {
     if (_error != null) {
       _error = null;
@@ -198,7 +198,7 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
-  // Hàm đặt lỗi (Giữ nguyên)
+  // Hàm đặt lỗi
   void setError(String message) {
     _error = message;
     notifyListeners();

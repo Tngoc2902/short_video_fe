@@ -167,7 +167,6 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen>
     }
   }
 
-  // Tạm thời vô hiệu hóa _goToMessageDetail
   Future<void> _goToMessageDetail() async {
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(content: Text('Chức năng nhắn tin chưa được hỗ trợ')),
@@ -209,7 +208,7 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen>
       );
     }
 
-    // Giao diện chính (dựa trên code cũ của bạn)
+    // Giao diện chính
     return Scaffold(
       backgroundColor: Colors.black,
       appBar: AppBar(
@@ -246,11 +245,10 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen>
           body: TabBarView(
             controller: _tabController,
             children: [
-              // Tab 1: Lưới bài đăng (Dùng PostGridView từ Canvas)
+              // Tab 1: Lưới bài đăng
               PostGridView(
                 posts: _userPosts,
                 onTap: (post) {
-                  // TODO: Điều hướng đến chi tiết bài đăng
                   print('Mở chi tiết bài đăng: ${post.id}');
                 },
               ),
@@ -268,7 +266,7 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen>
     );
   }
 
-  // Widget hiển thị Header (giống ProfileScreen nhưng thêm nút Message)
+  // Widget hiển thị Header
   Widget _buildProfileHeader() {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -352,7 +350,7 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen>
     );
   }
 
-  // Widget _buildStatColumn (giống ProfileScreen)
+  // Widget _buildStatColumn
   Widget _buildStatColumn(String label, String value) {
     return Column(
       children: [
@@ -366,7 +364,7 @@ class _OtherUserProfileScreenState extends State<OtherUserProfileScreen>
 }
 
 
-// Lớp helper để ghim TabBar (giống ProfileScreen)
+// Lớp helper để ghim TabBar
 class _SliverAppBarDelegate extends SliverPersistentHeaderDelegate {
   final TabBar _tabBar;
   _SliverAppBarDelegate(this._tabBar);

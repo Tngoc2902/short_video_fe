@@ -480,7 +480,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  // Widget _buildGenderField (Giữ nguyên)
+  // Widget _buildGenderField()
   Widget _buildGenderField() {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
@@ -532,7 +532,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     );
   }
 
-  // Widget _buildTextField (Giữ nguyên)
+  // Widget _buildTextField
   Widget _buildTextField(String label, TextEditingController controller,
       {int maxLines = 1, bool enabled = true}) {
     return Padding(
