@@ -1,8 +1,9 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
-import 'package:firebase_auth/firebase_auth.dart' as FirebaseAuth;
-import '../models/user.dart';
+// Đổi tên để tránh xung đột
+import 'package:firebase_auth/firebase_auth.dart' as FirebaseAuth ;
+import '../models/user.dart'; // Import User model của bạn (từ Canvas)
 
 class UserService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -46,7 +47,8 @@ class UserService {
         .where('username', isLessThanOrEqualTo: '$query\uf8ff')
         .limit(10)
         .get();
-    return result.docs.map((doc) => User.fromJson(doc.data())).toList();
+    // Dùng fromSnapshot để lấy doc.id
+    return result.docs.map((doc) => User.fromSnapshot(doc)).toList();
   }
 
   // === LẤY DANH SÁCH ĐANG THEO DÕI ===
@@ -60,16 +62,20 @@ class UserService {
         .collection('users')
         .where(FieldPath.documentId, whereIn: followingIds)
         .get();
-    return usersSnapshot.docs.map((doc) => User.fromJson(doc.data())).toList();
+    // Dùng fromSnapshot để lấy doc.id
+    return usersSnapshot.docs.map((doc) => User.fromSnapshot(doc)).toList();
   }
 
   // === TÌM KIẾM TRONG DANH SÁCH FOLLOWING ===
   Future<List<User>> searchFollowing(String userId, String query) async {
     if (userId.isEmpty) return [];
+    // Lấy danh sách đầy đủ
     final followingList = await getFollowingList(userId);
 
+    // Nếu không có query, trả về tất cả
     if (query.isEmpty) return followingList;
 
+    // Nếu có query, lọc danh sách
     final lowerQuery = query.toLowerCase();
     return followingList
         .where((u) =>
@@ -82,7 +88,8 @@ class UserService {
   Future<User> getUserProfile(String uid) async {
     final doc = await _firestore.collection('users').doc(uid).get();
     if (!doc.exists) throw Exception('User not found');
-    return User.fromJson(doc.data()!);
+    // Dùng fromSnapshot để lấy doc.id
+    return User.fromSnapshot(doc);
   }
 
   // === UPLOAD ẢNH ĐẠI DIỆN ===
@@ -108,4 +115,50 @@ class UserService {
       throw Exception("Profile update failed");
     }
   }
+
+  // === HÀM THEO DÕI USER ===
+  Future<void> followUser(String otherUserId) async {
+    final currentUserId = _currentUserId;
+    if (currentUserId == null) throw Exception("User not logged in");
+    if (currentUserId == otherUserId) throw Exception("Cannot follow yourself");
+
+    final currentUserRef = _firestore.collection('users').doc(currentUserId);
+    final otherUserRef = _firestore.collection('users').doc(otherUserId);
+    final batch = _firestore.batch();
+
+    // 1. Thêm otherUserId vào danh sách 'following' của currentUser
+    batch.update(currentUserRef, {
+      'following': FieldValue.arrayUnion([otherUserId])
+    });
+
+    // 2. Thêm currentUserId vào danh sách 'followers' của otherUser
+    batch.update(otherUserRef, {
+      'followers': FieldValue.arrayUnion([currentUserId])
+    });
+
+    await batch.commit();
+  }
+
+  // === HÀM BỎ THEO DÕI USER ===
+  Future<void> unfollowUser(String otherUserId) async {
+    final currentUserId = _currentUserId;
+    if (currentUserId == null) throw Exception("User not logged in");
+
+    final currentUserRef = _firestore.collection('users').doc(currentUserId);
+    final otherUserRef = _firestore.collection('users').doc(otherUserId);
+    final batch = _firestore.batch();
+
+    // 1. Xóa otherUserId khỏi 'following' của currentUser
+    batch.update(currentUserRef, {
+      'following': FieldValue.arrayRemove([otherUserId])
+    });
+
+    // 2. Xóa currentUserId khỏi 'followers' của otherUser
+    batch.update(otherUserRef, {
+      'followers': FieldValue.arrayRemove([currentUserId])
+    });
+
+    await batch.commit();
+  }
 }
+

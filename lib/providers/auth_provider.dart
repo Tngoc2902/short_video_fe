@@ -1,5 +1,6 @@
 import 'package:flutter/foundation.dart';
-import 'package:firebase_auth/firebase_auth.dart' as FirebaseAuth show User, FirebaseAuthException, UserCredential;
+// SỬA: Import toàn bộ thư viện với bí danh 'FirebaseAuth'
+import 'package:firebase_auth/firebase_auth.dart' as FirebaseAuth;
 import 'package:short_video_fe/services/auth_service.dart';
 import 'package:short_video_fe/services/user_service.dart';
 import '../models/user.dart';
@@ -10,15 +11,21 @@ class AuthProvider with ChangeNotifier {
 
   // Đây là user của Firebase Auth
   FirebaseAuth.User? _user;
+  // === THÊM MỚI (Lỗi 1): Dữ liệu chi tiết của user từ Firestore ===
+  User? _currentUserData;
+
   bool _isLoading = true;
   String? _error;
   bool _isUsernameAvailable = true;
   bool _initialCheckDone = false; // Cờ để chỉ logout một lần khi khởi động
 
   bool _isSearching = false;
-  List<User> _searchResults = []; // Sử dụng 'User' model của bạn
+  List<User> _searchResults = []; // Sử dụng 'User'
 
   FirebaseAuth.User? get user => _user;
+  // === THÊM MỚI (Lỗi 1): Getter cho currentUserData ===
+  User? get currentUserData => _currentUserData;
+
   bool get isLoading => _isLoading;
   String? get error => _error;
   bool get isUsernameAvailable => _isUsernameAvailable;
@@ -33,15 +40,32 @@ class AuthProvider with ChangeNotifier {
   // Lắng nghe stream thay đổi trạng thái của Firebase
   Future<void> _onAuthStateChanged(FirebaseAuth.User? user) async {
     print('AuthProvider: _onAuthStateChanged called with user: ${user?.uid}'); // Debug
+    _user = user; // Cập nhật user của Firebase Auth
 
+    // === SỬA (Lỗi 1): Tải hoặc xóa dữ liệu chi tiết ===
+    if (_user != null) {
+      // Nếu đăng nhập, tải thông tin chi tiết
+      try {
+        _currentUserData = await _userService.getUserProfile(_user!.uid);
+      } catch (e) {
+        _currentUserData = null;
+        print("Error loading current user data: $e");
+      }
+    } else {
+      // Nếu đăng xuất, xóa thông tin chi tiết
+      _currentUserData = null;
+    }
+    // === KẾT THÚC SỬA ===
+
+    // Logic tự động logout (Giữ nguyên)
     if (!_initialCheckDone) {
       _initialCheckDone = true; // Đánh dấu đã kiểm tra lần đầu
       if (user != null) {
         // Nếu Firebase nhớ user từ phiên trước, logout ngay lập tức
         print('AuthProvider: User found on initial check, logging out...'); // Debug
         await _authService.signOut();
-        // Sau khi signOut, stream sẽ phát ra giá trị null, hàm này sẽ được gọi lại
         _user = null; // Cập nhật user thành null ngay
+        _currentUserData = null; // SỬA: Xóa data
         _isLoading = false; // Hoàn tất kiểm tra ban đầu
         notifyListeners();
         print('AuthProvider: Logout complete after initial check.'); // Debug
@@ -73,6 +97,7 @@ class AuthProvider with ChangeNotifier {
     notifyListeners();
     try {
       await _authService.signIn(email, password);
+      // _onAuthStateChanged sẽ tự động tải _currentUserData
       return true;
     } on FirebaseAuth.FirebaseAuthException catch (e) {
       _error = e.message ?? "An unknown error occurred.";
@@ -98,7 +123,8 @@ class AuthProvider with ChangeNotifier {
 
       if (newUser != null) {
         await _userService.createUserProfile(newUser, username);
-        // Lưu ý: Logic này không tự động logout sau khi đăng ký
+        // SỬA: Tự động logout sau khi đăng ký (như logic của bạn)
+        await _authService.signOut();
         return true;
       }
       _error = "Failed to create user.";
@@ -122,6 +148,7 @@ class AuthProvider with ChangeNotifier {
   Future<void> logout() async {
     try {
       await _authService.signOut();
+      // _onAuthStateChanged sẽ tự động xóa _currentUserData
     } catch (e) {
       print("AuthProvider: Error during logout: $e");
     }
@@ -141,6 +168,7 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  // Hàm tìm kiếm user (Giữ nguyên)
   Future<void> searchUsers(String query) async {
     if (query.isEmpty) {
       _searchResults = [];
@@ -162,6 +190,7 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  // Hàm xóa lỗi (Giữ nguyên)
   void clearError() {
     if (_error != null) {
       _error = null;
@@ -169,9 +198,25 @@ class AuthProvider with ChangeNotifier {
     }
   }
 
+  // Hàm đặt lỗi (Giữ nguyên)
   void setError(String message) {
     _error = message;
     notifyListeners();
+  }
+
+  // === THÊM MỚI (Lỗi 2): Hàm tải lại dữ liệu ===
+  /// Tải lại dữ liệu người dùng (ví dụ: sau khi follow/unfollow)
+  void refreshCurrentUserData() async {
+    if (_user != null) { // Chỉ tải lại nếu đang đăng nhập
+      try {
+        _currentUserData = await _userService.getUserProfile(_user!.uid);
+        notifyListeners(); // Thông báo cho UI (OtherUserProfileScreen)
+      } catch (e) {
+        print("Lỗi khi refresh CurrentUserData: $e");
+        _error = "Failed to refresh user data";
+        notifyListeners();
+      }
+    }
   }
 }
 
